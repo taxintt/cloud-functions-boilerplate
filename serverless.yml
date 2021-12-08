@@ -1,0 +1,53 @@
+service: serverless-framework-python-sample
+
+provider:
+  name: google
+  stage: dev
+  runtime: python39
+  region: us-central1
+  project: <project_id>
+  # The GCF credentials can be a little tricky to set up. Luckily we've documented this for you here:
+  # https://serverless.com/framework/docs/providers/google/guide/credentials/
+  #
+  # the path to the credentials file needs to be absolute
+  credentials: ~/.gcloud/serverless-sample-key.json
+  
+
+frameworkVersion: '2'
+
+plugins:
+  - serverless-google-cloudfunctions
+  - serverless-plugin-scripts
+
+# needs more granular excluding in production as only the serverless provider npm
+# package should be excluded (and not the whole node_modules directory)
+package:
+  patterns:
+    - '.gitignore'
+    - '.git/**'
+
+functions:
+  hello:
+    # https://www.serverless.com/examples/google-python-simple-http-endpoint/
+    handler: ${self:custom.functionName}
+    events:
+      - http: path
+
+# you can define resources, templates etc. the same way you would in a
+# Google Cloud deployment configuration
+#resources:
+#  resources:
+#    - type: storage.v1.bucket
+#      name: my-serverless-service-bucket
+#  imports:
+#    - path: my_template.jinja
+
+custom:
+  functionName: hello
+  # this comes from https://www.npmjs.com/package/serverless-plugin-scripts
+  scripts:
+    commands:
+      make-public: gcloud functions add-iam-policy-binding ${self:service}-${self:provider.stage}-${self:custom.functionName} --member="allUsers" --role="roles/cloudfunctions.invoker" --project=${self:provider.project} --region=${self:provider.region} | xargs echo 
+    hooks:
+      'after:deploy:deploy': FUNC_NAME=${self:custom.functionName} npx serverless make-public
+  

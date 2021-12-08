@@ -1,0 +1,12 @@
+.venv/*
+env/*
+
+.python-version
+.vscode
+.DS_Store
+.serverless
+
+node_modules/*
+
+__pycache__
+*.pyc
